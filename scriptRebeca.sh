@@ -1,42 +1,102 @@
 #!/bin/bash
 
-#userul ar trebui sa fie mereu pe ultima pozitie
+
+N=$((2**32-1))
+COD=0
 USER=""
-if [ $(($#%2)) -gt 0 ]; then
-	for arg;do
-	USER="$arg"
-	done
-fi
 
 verificare_user(){
 if [ -z "$USER" ]; then
 	cat #daca nu avem user mentionat nu schimb inputul
 else
 	while read -r linie;do
-		printf "$linie" | grep "$USER"
+		printf "$linie" | grep -F "$USER"
 	done
 	#folosesc printf si nu echo pentru ca echo are probleme cu backslash
-	#printf si nu cat pentru ca cat nu poate lua din variabila
+	#printf si nu cat deoarece cat nu poate lua din variabila
+	#F ca string fixat nu ca regex
 fi
 }
-verificare_optiune(){
 
-COMANDA=$1
-CONTENT=$2
-CONTOR=0
-FISIER="/var/log/auth.log" 
-if [ "$COMANDA" == "-n" ]; then
-                tac /var/log/auth.log | grep -a "session opened" | verificare_user | grep -v "/var/log/auth.log" | head -n "$CONTENT" | while read -r linie; do
-                        awk '{ print $1, $2, $9, $11}'
-                        CONTOR=$((CONTOR + 1))
-                done
-        fi      
+afisare(){
+
+awk '{ print $1, $3, $9, $11 }'
+
 }
 
-#mai mare ca 1 pentru ca daca ajunge la user pe ultima pozitie sa nu mai intre in while
-while [ "$#" -gt 1 ];do
-	if [ "$1" = "-n" ] || [ "$1" == "-s" ] || [  "$1" == "-t" ] || [ "$1" == "-p" ]; then
-                         verificare_optiune "$1" "$2"  #automat daca avem un option avem si un parametru dupa
-        	shift 2
-        fi
+verificare_optiune(){
+
+CONTOR=0
+INDEX=0
+FISIERE=("/var/log/auth.log"
+	"/var/log/auth.log.1" 
+	"/var/log/auth.log.2.gz"
+	"/var/log/auth.log.3.gz"
+	"/var/log/auth.log.4.gz")
+
+while [ "$N" -gt 0 ] && [ "$INDEX" -lt 5 ]; do
+
+    CONTOR=0
+    if [ "$INDEX" -lt 2 ]; then
+        while read -r linie; do
+            printf "%s\n" "$linie" | afisare 
+            CONTOR=$((CONTOR + 1))
+        done < <(
+            tac "${FISIERE[INDEX]}" \
+            | grep "session opened" 2>/dev/null \
+            | verificare_user \
+            | head -n "$N"
+        )
+    else
+        while read -r linie; do
+            printf "%s\n" "$linie" | afisare
+            CONTOR=$((CONTOR + 1))
+        done < <(
+            gunzip -c "${FISIERE[INDEX]}" \
+            | tac \
+            | grep "session opened" 2>/dev/null \
+            | verificare_user \
+            | head -n "$N"
+        )
+    fi
+    
+    N=$((N - CONTOR))
+    INDEX=$((INDEX + 1))
+    #echo "$N" "$INDEX" "$CONTOR"
+    
 done
+}
+
+#codificare de tip present_till_since
+while [ "$#" -gt 0 ];do
+	case "$1" in 
+	-n)
+		N=$2
+		#nu encodez in comanda -n, daca nu e apelat ramane int_max
+		shift 2
+	;;
+	-s)
+		COD=$((COD+(1<<0)))
+		shift 2
+	;;
+	-t)
+		COD=$((COD+(1<<1)))
+		shift 2
+	;;
+	-p)
+		COD=$((COD+(1<<2)))
+		shift 2
+	;;
+	*)
+		if [ "$#" = 1 ] && [ id "$1" &>/dev/null ] ; then
+			USER="$1"
+			shift 1
+		else
+			echo "Eroare de sintaxa" 
+			exec exit 1
+		fi
+	;;
+	esac
+done
+
+verificare_optiune 
