@@ -23,20 +23,26 @@ verificare_user(){
 }
 
 flag_s(){
+    
+    ok=0
     if [ -z "$SINCE" ]; then
         cat
     else
-        SINCE=$(date +%s -d "$SINCE")
+    	if [ -z "$PRESENT" ];then
+    		SINCE=$(date +%s -d "$SINCE")
+    	fi
         while read -r linie; do
             tmp=$(echo "$linie" | awk '{print $1}')
             tmp=$(date +%s -d "$tmp")
             if [ "$tmp" -ge "$SINCE" ]; then
                 echo "$linie"
             else
-                SINCE=""
-                break
+                ok=1
             fi
         done
+    fi
+    if [ "$ok" -eq 1 ];then
+    	SINCE=""
     fi
 }
 
@@ -44,30 +50,16 @@ flag_t(){
     if [ -z "$TILL" ]; then
         cat
     else
-        TILL=$(date +%s -d "$TILL")
+        if [ -z "$PRESENT" ];then
+        	TILL=$(date +%s -d "$TILL")
+        fi
         while read -r linie; do
             tmp=$(echo "$linie" | awk '{print $1}')
             tmp=$(date +%s -d "$tmp")
             if [ "$tmp" -lt "$TILL" ]; then
                 echo "$linie"
             else
-            break
-            fi
-        done
-    fi
-}
-
-flag_p(){
-    if [ -z "$PRESENT" ]; then
-        cat
-    else
-        PRESENT=$(date +%s -d "$PRESENT")
-        NEXTDAY=$(($PRESENT+ 86400))
-        while read -r linie; do
-            tmp=$(echo "$linie" | awk '{print $1}')
-            tmp=$(date +%s -d "$tmp")
-            if [ "$tmp" -ge "$PRESENT" ] && [ "$tmp" -lt "$NEXTDAY" ]; then
-                echo "$linie"
+                break
             fi
         done
     fi
@@ -206,7 +198,24 @@ verificare_optiune(){
     "/var/log/auth.log.2.gz"
     "/var/log/auth.log.3.gz"
     "/var/log/auth.log.4.gz")
-
+    
+    if [ -n "$PRESENT" ];then
+    	PRESENT=$(date +%s -d "$PRESENT")
+    	NEXTDAY=$(($PRESENT+ 86400))
+    	if [ -z "$SINCE" ];then
+    		SINCE="$PRESENT"
+    	else
+    		SINCE=$(date +%s -d "$SINCE")
+    		SINCE=$(( SINCE > PRESENT ? SINCE : PRESENT ))
+    	fi
+    	if [ -z "$TILL" ]; then
+    		TILL="$NEXTDAY"
+    	else
+    		TILL=$(date +%s -d "$TILL")
+    		TILL=$(( TILL < NEXTDAY ? TILL : NEXTDAY))
+    	fi
+    fi
+  
     while [ "$N" -gt 0 ] && [ "$INDEX" -lt 5 ]; do
         CONTOR=0
         OK=0
@@ -217,16 +226,14 @@ verificare_optiune(){
                 grep -a -v "CRON" |
                 verificare_user |
                 flag_s |
-                flag_t |
-                flag_p
+                flag_t 
             else
                 gunzip -c "${FISIERE[INDEX]}" 2>/dev/null |
                 grep -a -v "polkit" |
                 grep -a -v "CRON" |
                 verificare_user |
                 flag_s |
-                flag_t |
-                flag_p
+                flag_t 
             fi
         )
 
