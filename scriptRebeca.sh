@@ -1,6 +1,6 @@
 #!/bin/bash
 
-N=$((2**32-1))
+N=$((2**20-1))
 SINCE=""
 TILL=""
 PRESENT=""
@@ -10,7 +10,7 @@ declare -a NAME=()
 declare -a METHOD=()
 declare -a BEGIN=()
 declare -a END=()
-declare -A PID=
+declare -A PID=()
 # key=process id, value=index. key=0 pentru gdm-greeter
 
 verificare_user(){
@@ -28,9 +28,6 @@ flag_s(){
     if [ -z "$SINCE" ]; then
         cat
     else
-    	if [ -z "$PRESENT" ];then
-    		SINCE=$(date +%s -d "$SINCE")
-    	fi
         while read -r linie; do
             tmp=$(echo "$linie" | awk '{print $1}')
             tmp=$(date +%s -d "$tmp")
@@ -50,9 +47,6 @@ flag_t(){
     if [ -z "$TILL" ]; then
         cat
     else
-        if [ -z "$PRESENT" ];then
-        	TILL=$(date +%s -d "$TILL")
-        fi
         while read -r linie; do
             tmp=$(echo "$linie" | awk '{print $1}')
             tmp=$(date +%s -d "$tmp")
@@ -166,9 +160,6 @@ prelucrare(){
                 fi
                 unset PID["$KEY"]
             fi
-            if [[ $I =~ ^[0-9]+$ ]] 2>/dev/null ; then
-                END[$I]="$(awk '{print $1}' <<< "$line")"
-            fi
         fi
     done
 
@@ -180,7 +171,7 @@ prelucrare(){
 afisare(){
 #echo "$INDEX"
     CONTOR=$((CONTOR-1))
-    for ((i=CONTOR; i>=AUX; i--)); do
+    for ((i=CONTOR; i>=0; i--)); do
         printf "%s   %s   " "${NAME[i]}" "${METHOD[i]}"
         printf "%s   " "$(date -d "${BEGIN[i]}" +"%a %b %d %H:%M")"
         if [ -z "${END[i]}" ]; then
@@ -217,18 +208,25 @@ afisare(){
     METHOD=()
     BEGIN=()
     END=()
-    PID=()
+
 }
 
 verificare_optiune(){
     CONTOR=0
     INDEX=0
-    AUX=0
     FISIERE=("/var/log/auth.log"
     "/var/log/auth.log.1"
     "/var/log/auth.log.2.gz"
     "/var/log/auth.log.3.gz"
     "/var/log/auth.log.4.gz")
+    
+    if [ -n "$SINCE" ];then
+    	SINCE=$(date +%s -d "$SINCE")
+    fi
+    
+    if [ -n "$TILL" ];then
+        TILL=$(date +%s -d "$TILL")
+    fi
     
     if [ -n "$PRESENT" ];then
     	PRESENT=$(date +%s -d "$PRESENT")
@@ -236,21 +234,22 @@ verificare_optiune(){
     	if [ -z "$SINCE" ];then
     		SINCE="$PRESENT"
     	else
-    		SINCE=$(date +%s -d "$SINCE")
     		SINCE=$(( SINCE > PRESENT ? SINCE : PRESENT ))
     	fi
     	if [ -z "$TILL" ]; then
     		TILL="$NEXTDAY"
     	else
-    		TILL=$(date +%s -d "$TILL")
     		TILL=$(( TILL < NEXTDAY ? TILL : NEXTDAY))
     	fi
     fi
-  
+    
+    if [ -n "$TILL" ] && [ -n "$SINCE" ] && [ "$TILL" -lt "$SINCE" ];then
+    	echo "Interval de timp invalid"
+    	exit 1
+    fi
+    
     while [ "$N" -gt 0 ] && [ "$INDEX" -lt 5 ]; do
         CONTOR=0
-        OK=0
-        #echo "$INDEX"
         prelucrare < <(
             if [ "$INDEX" -lt 2 ]; then
                 cat "${FISIERE[INDEX]}" |
@@ -271,10 +270,9 @@ verificare_optiune(){
 
         INDEX=$((INDEX + 1))
         if [ "$CONTOR" -gt "$N" ]; then
-            AUX=$((CONTOR - N))
+            CONTOR="$N"
             N=0
         else
-            AUX=0
             N=$((N - CONTOR))
         fi
         afisare
@@ -306,7 +304,7 @@ get_input(){
                 shift 1
             else
                 echo "Eroare de sintaxa"
-                exec exit 1
+                exit 1
             fi
             ;;
         esac
