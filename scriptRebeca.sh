@@ -115,7 +115,32 @@ prelucrare(){
                 fi
                 unset PID["$KEY"]
             fi
+	
+	elif [[ "$line" =~ sshd\[[0-9]+\] ]] && [[ "$line" =~ session\ opened\ for\ user ]]; then
+	#2025-12-08T23:11:08.030045+02:00 elizaboros-VirtualBox sshd[6054]: pam_unix(sshd:session): session opened for user elizaboros(uid=1000) by elizaboros(uid=0)
+	    KEY="$(awk '{print $3}' <<< "$line" | grep -oP '\d+')"
+            if [[ -n "$KEY" ]] && [[ -v PID["$KEY"] ]]; then
+                continue
+            else
+                PID["$KEY"]=$CONTOR
+            fi
+            BEGIN+=("$(awk '{print $1}' <<< "$line")")
+            END+=("")
+            NAME+=("$(awk '{print $10}' <<< "$line" | sed 's/(.*//')")
+            METHOD+=("ssh")
+            CONTOR=$((CONTOR+1))
 
+	elif [[ "$line" =~ sshd\[[0-9]+\]:\ pam_unix\(sshd:session\):\ session\ closed\ for\ user ]]; then
+	#2025-12-08T23:11:08.190851+02:00 elizaboros-VirtualBox sshd[6054]: pam_unix(sshd:session): session closed for user elizaboros
+	    KEY="$(awk '{print $3}' <<< "$line" | grep -oP '\d+')"
+            if [[ -n "$KEY" ]] && [[ -v PID["$KEY"] ]]; then
+                I=${PID["$KEY"]}
+                if [[ $I =~ ^[0-9]+$ ]] ; then
+                    END[$I]="$(awk '{print $1}' <<< "$line")"
+                fi
+                unset PID["$KEY"]
+            fi
+            
         elif [[ "$line" =~ su\[[0-9]+\]:\ \(to\ root\)\ root\ on ]]; then
             #2026-01-01T00:45:25.422637+00:00 Ubuntu25 su[6035]: (to root) root on pts/1
             KEY="$(awk '{print $3}' <<< "$line" | grep -oP '\d+')"
@@ -153,6 +178,7 @@ prelucrare(){
 }
 
 afisare(){
+#echo "$INDEX"
     CONTOR=$((CONTOR-1))
     for ((i=CONTOR; i>=AUX; i--)); do
         printf "%s   %s   " "${NAME[i]}" "${METHOD[i]}"
@@ -219,6 +245,7 @@ verificare_optiune(){
     while [ "$N" -gt 0 ] && [ "$INDEX" -lt 5 ]; do
         CONTOR=0
         OK=0
+        echo "$INDEX"
         prelucrare < <(
             if [ "$INDEX" -lt 2 ]; then
                 cat "${FISIERE[INDEX]}" |
