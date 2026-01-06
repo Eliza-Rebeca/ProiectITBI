@@ -116,7 +116,7 @@ prelucrare(){
                 unset PID["$KEY"]
             fi
 	
-	elif [[ "$line" =~ sshd\[[0-9]+\] ]] && [[ "$line" =~ session\ opened\ for\ user ]]; then
+	elif [[ "$line" =~ sshd ]] && [[ "$line" =~ session\ opened\ for\ user ]]; then
 	#2025-12-08T23:11:08.030045+02:00 elizaboros-VirtualBox sshd[6054]: pam_unix(sshd:session): session opened for user elizaboros(uid=1000) by elizaboros(uid=0)
 	    KEY="$(awk '{print $3}' <<< "$line" | grep -oP '\d+')"
             if [[ -n "$KEY" ]] && [[ -v PID["$KEY"] ]]; then
@@ -126,11 +126,11 @@ prelucrare(){
             fi
             BEGIN+=("$(awk '{print $1}' <<< "$line")")
             END+=("")
-            NAME+=("$(awk '{print $10}' <<< "$line" | sed 's/(.*//')")
+            NAME+=("$(awk '{print $9}' <<< "$line" | sed 's/(.*//')")
             METHOD+=("ssh")
             CONTOR=$((CONTOR+1))
 
-	elif [[ "$line" =~ sshd\[[0-9]+\]:\ pam_unix\(sshd:session\):\ session\ closed\ for\ user ]]; then
+	elif [[ "$line" =~ pam_unix\(sshd:session\):\ session\ closed\ for\ user ]]; then
 	#2025-12-08T23:11:08.190851+02:00 elizaboros-VirtualBox sshd[6054]: pam_unix(sshd:session): session closed for user elizaboros
 	    KEY="$(awk '{print $3}' <<< "$line" | grep -oP '\d+')"
             if [[ -n "$KEY" ]] && [[ -v PID["$KEY"] ]]; then
@@ -213,6 +213,11 @@ afisare(){
         fi
         printf "\n"
     done
+    NAME=()
+    METHOD=()
+    BEGIN=()
+    END=()
+    PID=()
 }
 
 verificare_optiune(){
@@ -245,7 +250,7 @@ verificare_optiune(){
     while [ "$N" -gt 0 ] && [ "$INDEX" -lt 5 ]; do
         CONTOR=0
         OK=0
-        echo "$INDEX"
+        #echo "$INDEX"
         prelucrare < <(
             if [ "$INDEX" -lt 2 ]; then
                 cat "${FISIERE[INDEX]}" |
