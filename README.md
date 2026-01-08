@@ -47,8 +47,8 @@ sh
 ```
 ./last.sh -n 5
 ./last.sh -s 2025-01-01
-./lastb.sh -t 2025-01-31
-./lastb.sh -p 2025-09-10
+./lastb.sh -t 2025-01-31 12:00:00
+./lastb.sh -p 2025-09-10 12:00:00
 ./last.sh alice
 ./lastb.sh ana tty3
 ```
@@ -107,8 +107,8 @@ sh
 ```
 ./last.sh -n 5
 ./last.sh -s 2025-01-01
-./lastb.sh -t 2025-01-31
-./lastb.sh -p 2025-09-10
+./lastb.sh -t 2025-01-31 12:00:00
+./lastb.sh -p 2025-09-10 12:00:00
 ./last.sh alice
 ./lastb.sh ana tty3
 ```
