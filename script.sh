@@ -9,33 +9,85 @@ ok=1
         while [ "$ok" -eq 1 ]; do
 		ok=0
                 if [ "$1" == "-n" ]; then
+			if ! [[ "$2" =~ ^[0-9]+$ ]]; then
+				echo "Error! Option -n requires a number!"
+				echo "Lastb script input: [-n number] [-p YYYY-MM-DD HH-MM-SS] [-s YYYY-MM-DD HH-MM-SS] [-t YYYY-MM-DD HH-MM-SS] [user] [tty]"
+				exit 1 
+			fi
 			 n="$2"
                          shift 2
 			 ok=1
 		elif [ "$1" == "-p" ]; then
-                         data="$2"
-			 ora="$3"
+                        if ! [[ "$2" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+				echo "Error! Option -p requires a valid date: YYYY-MM-DD and a valid time: HH:MM:SS"
+                                echo "Lastb script input: [-n number] [-p YYYY-MM-DD HH-MM-SS] [-s YYYY-MM-DD HH-MM-SS] [-t YYYY-MM-DD HH-MM-SS] [user] [tty]"
+                                exit 1
+ 			fi
+			data="$2"
+			if ! [[ "$3" =~ ^[0-9]{2}:[0-9]{2}:[0-9]{2}$ ]]; then
+				echo "Error! Option -p requires a valid date: YYYY-MM-DD and a valid time: HH:MM:SS"
+                                echo "Lastb script input: [-n number] [-p YYYY-MM-DD HH-MM-SS] [-s YYYY-MM-DD HH-MM-SS] [-t YYYY-MM-DD HH-MM-SS] [user] [tty]"
+                                exit 1
+			fi
+			ora="$3"
+			if ! date -d "$data $ora" >/dev/null 2>&1; then
+				echo "Error! Option -p requires a valid date: YYYY-MM-DD and a valid time: HH:MM:SS"
+                                echo "Lastb script input: [-n number] [-p YYYY-MM-DD HH-MM-SS] [-s YYYY-MM-DD HH-MM-SS] [-t YYYY-MM-DD HH-MM-SS] [user] [tty]"
+                                exit 1
+			fi
 			p=$(date -d "$data $ora" +%s 2>/dev/null)
 			data=""
 			ora=""
                          shift 3
                          ok=1
                 elif [ "$1" == "-s" ]; then
-                         data="$2"
-                         ora="$3"
+                         if ! [[ "$2" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+                                echo "Error! Option -s requires a valid date: YYYY-MM-DD and a valid time: HH:MM:SS"
+                                echo "Lastb script input: [-n number] [-p YYYY-MM-DD HH-MM-SS] [-s YYYY-MM-DD HH-MM-SS] [-t YYYY-MM-DD HH-MM-SS] [user] [tty]"
+                                exit 1
+                        fi
+                        data="$2"
+                        if ! [[ "$3" =~ ^[0-9]{2}:[0-9]{2}:[0-9]{2}$ ]]; then
+                                echo "Error! Option -s requires a valid date: YYYY-MM-DD and a valid time: HH:MM:SS"
+                                echo "Lastb script input: [-n number] [-p YYYY-MM-DD HH-MM-SS] [-s YYYY-MM-DD HH-MM-SS] [-t YYYY-MM-DD HH-MM-SS] [user] [tty]"
+                                exit 1
+                        fi
+                        ora="$3"
+                        if ! date -d "$data $ora" >/dev/null 2>&1; then
+                                echo "Error! Option -s requires a valid date: YYYY-MM-DD and a valid time: HH:MM:SS"
+                                echo "Lastb script input: [-n number] [-p YYYY-MM-DD HH-MM-SS] [-s YYYY-MM-DD HH-MM-SS] [-t YYYY-MM-DD HH-MM-SS] [user] [tty]"
+                                exit 1
+                        fi
                         s=$(date -d "$data $ora" +%s 2>/dev/null)
                         data=""
                         ora=""
-			shift 3
+                         shift 3
                          ok=1
+
    		elif [ "$1" == "-t" ]; then
-                         data="$2"
-                         ora="$3"
+                         if ! [[ "$2" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+                                echo "Error! Option -t requires a valid date: YYYY-MM-DD and a valid time: HH:MM:SS"
+                                echo "Lastb script input: [-n number] [-p YYYY-MM-DD HH-MM-SS] [-s YYYY-MM-DD HH-MM-SS] [-t YYYY-MM-DD HH-MM-SS] [user] [tty]"
+                                exit 1
+                        fi
+                        data="$2"
+                        if ! [[ "$3" =~ ^[0-9]{2}:[0-9]{2}:[0-9]{2}$ ]]; then
+                                echo "Error! Option -t requires a valid date: YYYY-MM-DD and a valid time: HH:MM:SS"
+                                echo "Lastb script input: [-n number] [-p YYYY-MM-DD HH-MM-SS] [-s YYYY-MM-DD HH-MM-SS] [-t YYYY-MM-DD HH-MM-SS] [user] [tty]"
+                                exit 1
+                        fi
+                        ora="$3"
+                        if ! date -d "$data $ora" >/dev/null 2>&1; then
+                                echo "Error! Option -t requires a valid date: YYYY-MM-DD and a valid time: HH:MM:SS"
+                                echo "Lastb script input: [-n number] [-p YYYY-MM-DD HH-MM-SS] [-s YYYY-MM-DD HH-MM-SS] [-t YYYY-MM-DD HH-MM-SS] [user] [tty]"
+                                exit 1
+                        fi
                         t=$(date -d "$data $ora" +%s 2>/dev/null)
                         data=""
                         ora=""
-                        shift 3
+                         shift 3
                          ok=1
+
 
                 fi
 done
@@ -47,11 +99,14 @@ tty=""
 		if id "$1" >/dev/null 2>&1; then
 			user=$(id -un "$1")
 			shift 1
-		elif [ -c "/dev/$1" ]; then
+		elif [ -c "/dev/$1" ] || [ -c "/dev/pts/$1" ]; then
 			tty=$1
 			shift 1
+		else
+			echo "Error! Introduce a valid user or tty!"
+                        echo "Lastb script input: [-n number] [-p YYYY-MM-DD HH-MM-SS] [-s YYYY-MM-DD HH-MM-SS] [-t YYYY-MM-DD HH-MM-SS] [user] [tty]"
+                        exit 1
 		fi
-
 	done
 
 cnt=0
@@ -62,14 +117,6 @@ cnt=0
 	service_curent=$(echo "$linie" | sed -E 's/.*pam_unix\(([^:]+):auth\).*/\1/')
 	data_text=$(echo "$linie" | sed -E 's/^([^ ]+).*/\1/' | sed 's/T/ /; s/\..*+02:00//')
 	data_curent=$(date -d "$data_text" +%s)
-
-
-    if [ -n "$n" ]; then
-        cnt=$((cnt + 1))
-        if [ "$cnt" -gt "$n" ]; then
-            break
-        fi
-    fi
 
     if [ -n "$p" ]; then
         if [ "$p" -ne "$data_curent" ]; then
@@ -102,5 +149,13 @@ cnt=0
             continue
         fi
     fi
-     echo "$user_curent $service_curent $tty_curent $data_text" | column -t
+      printf "%-15s %-15s %-8s %s\n" "$user_curent" "$service_curent" "$tty_curent" "$data_text"
+
+    if [ -n "$n" ]; then
+        cnt=$((cnt + 1))
+        if [ "$cnt" -ge "$n" ]; then
+            break
+        fi
+    fi
+
 done
