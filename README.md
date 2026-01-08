@@ -7,29 +7,29 @@
 
 ## Overview
 
-MyLast consists of two Linux shell scripts that emulate the behavior of the last and lastb commands:
+MyLast consists of two Linux shell scripts that emulate the behavior of the `last` and `lastb` commands:
 
-* last.sh displays successful login sessions
+* `last.sh` displays successful login sessions
 
-* lastb.sh displays failed login attempts
+* `lastb.sh` displays failed login attempts
 
 ## Supported Flags
 
 The script supports the following options:
 
-* -n <number>
+* `-n <number>`
   Limit the output to the first **n** entries.
 
-* -s <time>
+* `-s <time>`
   Show sessions starting **since** the specified time or date.
 
-* -t <time>
+* `-t <time>`
   Show sessions **until** the specified time or date.
 
-* -p <present>
+* `-p <present>`
   Show sessions that were present at the specified time.
 
-Flags can be combined depending on the script logic.
+Flags can be combined depending on the script logic. All dates should be formatted YYYY-MM-DD.
 
 ## Usage
 
@@ -91,7 +91,7 @@ Scriptul oferă următoarele opțiuni:
 * `-p <present>`
   Afișează sesiunile care erau active la momentul specificat.
 
-Opțiunile pot fi combinate în funcție de logica scriptului.
+Opțiunile pot fi combinate în funcție de logica scriptului. Toate datele trebuie formatate YYYY-MM-DD.
 
 ## Utilizare
 
