@@ -103,7 +103,7 @@ tty=""
 			tty=$1
 			shift 1
 		else
-			echo "Error! Introduce a valid user or tty!"
+			echo "Error! Introduce a valid option, user or tty!"
                         echo "Lastb script input: [-n number] [-p YYYY-MM-DD HH-MM-SS] [-s YYYY-MM-DD HH-MM-SS] [-t YYYY-MM-DD HH-MM-SS] [user] [tty]"
                         exit 1
 		fi
